@@ -69,6 +69,16 @@
               <div class="tip-text">可以在“分类管理”中创建更多分类</div>
             </el-form-item>
 
+            <el-form-item label="商品状态" prop="status">
+              <el-switch
+                v-model="goodsForm.status"
+                :active-value="1"
+                :inactive-value="0"
+                active-text="上架"
+                inactive-text="下架"
+              />
+            </el-form-item>
+
             <el-row :gutter="40">
               <el-col :span="12">
                 <el-form-item label="商品价格 (元)" prop="goods_price">
@@ -333,6 +343,7 @@ const goodsForm = reactive({
   category_ids: [],
   store_id: "",
   specs: [],
+  status: 1,
 });
 
 const rules = {
@@ -347,6 +358,7 @@ const rules = {
     { required: true, message: "请选择至少一个分类", trigger: "change" },
   ],
   store_id: [{ required: true, message: "请选择所属门店", trigger: "change" }],
+  status: [{ required: true, message: "请选择商品状态", trigger: "change" }],
 };
 
 // 规格相关方法
@@ -456,6 +468,7 @@ const fetchGoodsData = async () => {
     goodsForm.goods_num = data.goods_num;
     goodsForm.goods_img = data.goods_img;
     goodsForm.store_id = data.store_id;
+    goodsForm.status = data.status ?? 1;
 
     // 后端返回的是 categories 数组
     const categoryIds = (data.categories || []).map((c) => c.id);
@@ -543,6 +556,7 @@ const submitForm = async () => {
           goods_img: goodsForm.goods_img,
           store_id: goodsForm.store_id,
           specs: cleanedSpecs,
+          status: goodsForm.status,
         };
 
         if (isEdit.value) {

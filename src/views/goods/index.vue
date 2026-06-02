@@ -127,9 +127,13 @@
         </el-table-column>
         <el-table-column label="状态" width="100" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.status === 1 ? 'success' : 'info'">
-              {{ scope.row.status === 1 ? '上架中' : '已下架' }}
-            </el-tag>
+            <el-switch
+              v-model="scope.row.status"
+              :active-value="1"
+              :inactive-value="0"
+              :before-change="() => handleBeforeStatusChange(scope.row)"
+              @change="() => {}"
+            />
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="上架时间" width="180" align="center" sortable="custom">
@@ -137,13 +141,10 @@
             {{ formatTime(scope.row.createdAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" align="center" fixed="right">
+        <el-table-column label="操作" width="160" align="center" fixed="right">
           <template #default="scope">
             <el-button size="small" type="primary" link icon="View" @click="handleViewDetail(scope.row)">详情</el-button>
             <el-button v-if="userStore.buttons.includes('goods:edit_btn')" size="small" type="primary" link icon="Edit" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button v-if="userStore.buttons.includes('goods:delete_btn')" size="small" :type="scope.row.status === 1 ? 'danger' : 'success'" link :icon="scope.row.status === 1 ? 'Delete' : 'Check'" @click="handleStatusChange(scope.row)">
-              {{ scope.row.status === 1 ? '下架' : '上架' }}
-            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -365,6 +366,33 @@ const handleViewDetail = async (row) => {
 
 const handleEdit = (row) => {
   router.push(`/goods_manage/edit/${row.id}`)
+}
+
+const handleBeforeStatusChange = (row) => {
+  const isOff = row.status === 1
+  const actionText = isOff ? '下架' : '上架'
+  return new Promise((resolve) => {
+    ElMessageBox.confirm(`确定要${actionText}该商品吗？`, '提示', {
+      type: isOff ? 'warning' : 'info',
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+    }).then(async () => {
+      try {
+        if (isOff) {
+          await deleteGoods(row.id)
+        } else {
+          await restoreGoods(row.id)
+        }
+        ElMessage.success(`商品${actionText}成功`)
+        resolve(true)
+      } catch (error) {
+        console.error(`${actionText}失败:`, error)
+        resolve(false)
+      }
+    }).catch(() => {
+      resolve(false)
+    })
+  })
 }
 
 const handleStatusChange = (row) => {
