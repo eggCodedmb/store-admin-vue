@@ -44,6 +44,15 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="商品内容" min-width="250">
+          <template #default="scope">
+            <div v-for="(item, index) in (scope.row.order_items || scope.row.orderItems || [])" :key="index" class="item-summary">
+              <span class="item-name">{{ item.product?.goods_name || '未知商品' }}</span>
+              <el-tag v-if="item.specs" size="small" type="info" class="item-spec">{{ item.specs }}</el-tag>
+              <span class="item-qty">x{{ item.quantity }}</span>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="total_price" label="订单总价" width="120" align="center">
           <template #default="scope">
             <span style="color: var(--el-color-danger); font-weight: bold">¥ {{ scope.row.total_price }}</span>
@@ -333,6 +342,13 @@ onMounted(fetchOrders)
 .table-card :deep(.el-card__body) { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .card-header { display: flex; justify-content: space-between; align-items: center; }
 .pagination-container { margin-top: 24px; display: flex; justify-content: flex-end; }
+
+/* 商品简述样式 */
+.item-summary { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.item-summary:last-child { margin-bottom: 0; }
+.item-name { font-size: 13px; color: var(--el-text-color-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+.item-spec { font-size: 11px; border-radius: 4px; }
+.item-qty { font-size: 12px; color: var(--el-text-color-secondary); font-weight: 500; }
 
 /* 现代详情样式 */
 .modern-dialog :deep(.el-dialog__body) { padding: 0; }

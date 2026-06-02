@@ -44,8 +44,24 @@
       @close="resetForm"
     >
       <el-form :model="specForm" ref="formRef" label-position="top">
-        <el-form-item label="规格名称" required>
-          <el-input v-model="specForm.name" placeholder="请输入规格名称 (如: 甜度, 尺寸)" />
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="规格名称" required>
+              <el-input v-model="specForm.name" placeholder="请输入规格名称 (如: 甜度, 尺寸)" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="选择模式" required>
+              <el-radio-group v-model="specForm.select_type" style="width: 100%">
+                <el-radio-button label="single">单选</el-radio-button>
+                <el-radio-button label="multiple">多选</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item label="业务配置">
+          <el-checkbox v-model="specForm.is_required">设为必选规格</el-checkbox>
         </el-form-item>
         
         <div class="options-header">
@@ -54,7 +70,7 @@
         </div>
 
         <el-table :data="specForm.options" border size="small" style="margin-top: 10px">
-          <el-table-column label="选项名称" min-width="200">
+          <el-table-column label="选项名称" min-width="180">
             <template #default="{ row }">
               <el-input v-model="row.name" placeholder="请输入选项名称" />
             </template>
@@ -62,6 +78,11 @@
           <el-table-column label="价格增量" width="120">
             <template #default="{ row }">
               <el-input-number v-model="row.price_delta" :precision="2" :step="1" :min="0" style="width: 100%" controls-position="right" />
+            </template>
+          </el-table-column>
+          <el-table-column label="默认选中" width="100" align="center">
+            <template #default="{ row, $index }">
+              <el-switch v-model="row.is_default" size="small" @change="handleDefaultChange($index)" />
             </template>
           </el-table-column>
           <el-table-column label="操作" width="60" align="center">
@@ -95,8 +116,19 @@ const currentId = ref(null)
 
 const specForm = reactive({
   name: '',
+  select_type: 'single',
+  is_required: true,
   options: []
 })
+
+// 处理默认选中互斥逻辑
+const handleDefaultChange = (index) => {
+  if (specForm.select_type === 'single' && specForm.options[index].is_default) {
+    specForm.options.forEach((opt, idx) => {
+      if (idx !== index) opt.is_default = false
+    })
+  }
+}
 
 const fetchList = async () => {
   loading.value = true
@@ -122,15 +154,18 @@ const handleEdit = (row) => {
   isEdit.value = true
   currentId.value = row.id
   specForm.name = row.name
+  specForm.select_type = row.select_type || 'single'
+  specForm.is_required = row.is_required !== undefined ? row.is_required : true
   specForm.options = row.spec_options.map(opt => ({
     name: opt.name,
-    price_delta: Number(opt.price_delta)
+    price_delta: Number(opt.price_delta),
+    is_default: opt.is_default || false
   }))
   dialogVisible.value = true
 }
 
 const addOption = () => {
-  specForm.options.push({ name: '', price_delta: 0 })
+  specForm.options.push({ name: '', price_delta: 0, is_default: false })
 }
 
 const removeOption = (index) => {
@@ -166,6 +201,8 @@ const submitForm = async () => {
   try {
     const payload = {
       name: specForm.name,
+      select_type: specForm.select_type,
+      is_required: specForm.is_required,
       options: validOptions
     }
     if (isEdit.value) {

@@ -166,9 +166,26 @@
                         <el-input
                           v-model="group.name"
                           placeholder="规格名称"
-                          style="width: 240px"
+                          style="width: 180px"
                           :disabled="!!group.id"
                         />
+                        <div class="group-config" v-if="!group.id">
+                          <el-divider direction="vertical" />
+                          <el-radio-group v-model="group.select_type" size="small">
+                            <el-radio-button label="single">单选</el-radio-button>
+                            <el-radio-button label="multiple">多选</el-radio-button>
+                          </el-radio-group>
+                          <el-divider direction="vertical" />
+                          <el-checkbox v-model="group.is_required" size="small">必选</el-checkbox>
+                        </div>
+                        <div v-else class="group-config-display">
+                          <el-tag size="small" type="info" effect="plain" style="margin-left: 10px">
+                            {{ group.select_type === 'single' ? '单选' : '多选' }}
+                          </el-tag>
+                          <el-tag size="small" :type="group.is_required ? 'danger' : 'info'" effect="plain" style="margin-left: 5px">
+                            {{ group.is_required ? '必选' : '非必选' }}
+                          </el-tag>
+                        </div>
                       </div>
                       <div class="group-actions">
                         <el-button
@@ -191,7 +208,7 @@
 
                     <div class="options-container">
                       <el-table :data="group.options" border size="small">
-                        <el-table-column label="选项名称" min-width="180">
+                        <el-table-column label="选项名称" min-width="150">
                           <template #default="{ row }">
                             <el-input
                               v-model="row.name"
@@ -200,7 +217,7 @@
                             />
                           </template>
                         </el-table-column>
-                        <el-table-column label="价格增量 (元)" width="150">
+                        <el-table-column label="价格增量 (元)" width="120">
                           <template #default="{ row }">
                             <el-input-number
                               v-model="row.price_delta"
@@ -210,6 +227,16 @@
                               controls-position="right"
                               style="width: 100%"
                               :disabled="!!group.id"
+                            />
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="默认选中" width="100" align="center">
+                          <template #default="{ row, $index }">
+                            <el-switch
+                              v-model="row.is_default"
+                              size="small"
+                              :disabled="!!group.id"
+                              @change="handleDefaultChange(gIndex, $index)"
                             />
                           </template>
                         </el-table-column>
@@ -378,14 +405,17 @@ const handleSelectCommonSpec = (item) => {
     return ElMessage.warning("该规格已在列表中");
   }
 
-  // 添加到列表，保持 id 以便后端识别为模板引用
+  // 添加到列表，包含新增的业务字段
   goodsForm.specs.push({
     id: item.id,
     name: item.name,
+    select_type: item.select_type || "single", // 默认为单选
+    is_required: item.is_required !== undefined ? item.is_required : true, // 默认为必选
     options: item.spec_options.map((opt) => ({
       id: opt.id,
       name: opt.name,
       price_delta: Number(opt.price_delta),
+      is_default: opt.is_default || false,
     })),
   });
 };
@@ -401,7 +431,9 @@ const unbindTemplate = (index) => {
 const addSpecGroup = () => {
   goodsForm.specs.push({
     name: "",
-    options: [{ name: "", price_delta: 0 }],
+    select_type: "single",
+    is_required: true,
+    options: [{ name: "", price_delta: 0, is_default: false }],
   });
 };
 
@@ -413,7 +445,18 @@ const addSpecOption = (groupIndex) => {
   goodsForm.specs[groupIndex].options.push({
     name: "",
     price_delta: 0,
+    is_default: false,
   });
+};
+
+// 处理默认选中互斥逻辑（单选模式下只能有一个默认项）
+const handleDefaultChange = (groupIndex, optionIndex) => {
+  const group = goodsForm.specs[groupIndex];
+  if (group.select_type === "single" && group.options[optionIndex].is_default) {
+    group.options.forEach((opt, idx) => {
+      if (idx !== optionIndex) opt.is_default = false;
+    });
+  }
 };
 
 const removeSpecOption = (groupIndex, optionIndex) => {
@@ -480,10 +523,13 @@ const fetchGoodsData = async () => {
       goodsForm.specs = data.spec_groups.map((group) => ({
         id: group.id,
         name: group.name,
+        select_type: group.select_type || "single",
+        is_required: group.is_required !== undefined ? group.is_required : true,
         options: group.spec_options.map((opt) => ({
           id: opt.id,
           name: opt.name,
           price_delta: Number(opt.price_delta),
+          is_default: opt.is_default || false,
         })),
       }));
     }
@@ -799,6 +845,14 @@ onMounted(async () => {
   background-color: var(--el-fill-color-light);
 }
 
+.group-config {
+  display: flex;
+  align-items: center;
+}
+.group-config-display {
+  display: flex;
+  align-items: center;
+}
 .submit-btn {
   padding-left: 40px;
   padding-right: 40px;
