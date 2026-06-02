@@ -33,7 +33,7 @@
                 v-model="goodsForm.store_id"
                 placeholder="请选择所属门店"
                 style="width: 100%"
-                :disabled="isEdit"
+                :disabled="isEdit && !canEditStore"
               >
                 <el-option
                   v-for="item in filteredStoreOptions"
@@ -42,10 +42,13 @@
                   :value="item.id"
                 />
               </el-select>
-              <div class="tip-text" v-if="isAdmin && !isEdit">
+              <div class="tip-text" v-if="canEditStore && isEdit">
+                您有权限更改所属门店
+              </div>
+              <div class="tip-text" v-else-if="canEditStore && !isEdit">
                 请选择要发布该商品的门店
               </div>
-              <div class="tip-text" v-else-if="!isAdmin">
+              <div class="tip-text" v-else-if="!canEditStore">
                 只能在您所属的门店发布商品
               </div>
             </el-form-item>
@@ -269,6 +272,17 @@
               </el-scrollbar>
             </div>
 
+            <el-form-item label="商品详情" prop="goods_detail">
+              <el-input
+                v-model="goodsForm.goods_detail"
+                type="textarea"
+                :rows="4"
+                placeholder="请输入商品详情描述"
+                maxlength="500"
+                show-word-limit
+              />
+            </el-form-item>
+
             <el-form-item label="商品图片" prop="goods_img">
               <el-upload
                 class="avatar-uploader"
@@ -367,6 +381,7 @@ const goodsForm = reactive({
   goods_price: 0,
   goods_num: 1,
   goods_img: "",
+  goods_detail: "",
   category_ids: [],
   store_id: "",
   specs: [],
@@ -381,6 +396,7 @@ const rules = {
   goods_price: [{ required: true, message: "请输入商品价格", trigger: "blur" }],
   goods_num: [{ required: true, message: "请输入商品库存", trigger: "blur" }],
   goods_img: [{ required: true, message: "请上传商品图片", trigger: "change" }],
+  goods_detail: [{ required: true, message: "请输入商品详情", trigger: "blur" }],
   category_ids: [
     { required: true, message: "请选择至少一个分类", trigger: "change" },
   ],
@@ -463,10 +479,10 @@ const removeSpecOption = (groupIndex, optionIndex) => {
   goodsForm.specs[groupIndex].options.splice(optionIndex, 1);
 };
 
-const isAdmin = computed(() => userStore.roles.includes("admin"));
+const canEditStore = computed(() => userStore.buttons.includes("goods:edit_store"));
 
 const filteredStoreOptions = computed(() => {
-  if (isAdmin.value) return storeOptions.value;
+  if (canEditStore.value) return storeOptions.value;
   const userDepts = userStore.userInfo?.departments || [];
   return storeOptions.value.filter((s) => userDepts.some((d) => d.id === s.id));
 });
@@ -479,7 +495,7 @@ const fetchStores = async () => {
     // 如果是新增且没有手动选择门店
     if (!isEdit.value && !goodsForm.store_id) {
       const depts = userStore.userInfo?.departments || [];
-      if (!isAdmin.value && depts.length === 1) {
+      if (!canEditStore.value && depts.length === 1) {
         goodsForm.store_id = depts[0].id;
       }
     }
@@ -510,6 +526,7 @@ const fetchGoodsData = async () => {
     goodsForm.goods_price = Number(data.goods_price);
     goodsForm.goods_num = data.goods_num;
     goodsForm.goods_img = data.goods_img;
+    goodsForm.goods_detail = data.goods_detail || "";
     goodsForm.store_id = data.store_id;
     goodsForm.status = data.status ?? 1;
 
@@ -600,6 +617,7 @@ const submitForm = async () => {
           goods_price: goodsForm.goods_price,
           goods_num: goodsForm.goods_num,
           goods_img: goodsForm.goods_img,
+          goods_detail: goodsForm.goods_detail,
           store_id: goodsForm.store_id,
           specs: cleanedSpecs,
           status: goodsForm.status,

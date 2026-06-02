@@ -101,6 +101,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="goods_name" label="商品名称" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="goods_detail" label="商品详情" min-width="200" show-overflow-tooltip>
+          <template #default="scope">
+            {{ scope.row.goods_detail || '-' }}
+          </template>
+        </el-table-column>
         <el-table-column label="商品分类" width="150" align="center">
           <template #default="scope">
             <el-tag 

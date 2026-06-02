@@ -11,9 +11,15 @@
           class="search-input"
         />
       </div>
-      <el-button type="primary" icon="Plus" size="large" @click="handleCreate">
-        新增分类
-      </el-button>
+      <div class="action-right">
+        <span class="drag-tip">
+          <el-icon><Rank /></el-icon>
+          拖拽卡片可调整排序
+        </span>
+        <el-button type="primary" icon="Plus" size="large" @click="handleCreate">
+          新增分类
+        </el-button>
+      </div>
     </div>
 
     <!-- 卡片列表容器 -->
@@ -23,7 +29,10 @@
         v-model="categoryList"
         class="category-grid"
         item-key="id"
-        handle=".category-icon"
+        handle=".drag-handle"
+        ghost-class="category-ghost"
+        chosen-class="category-chosen"
+        drag-class="category-drag"
         @end="handleDragEnd"
         :animation="300"
       >
@@ -32,15 +41,25 @@
             class="category-card"
             shadow="hover"
           >
+            <div class="drag-handle" title="按住拖拽排序">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                <circle cx="4" cy="2" r="1.5" />
+                <circle cx="10" cy="2" r="1.5" />
+                <circle cx="4" cy="7" r="1.5" />
+                <circle cx="10" cy="7" r="1.5" />
+                <circle cx="4" cy="12" r="1.5" />
+                <circle cx="10" cy="12" r="1.5" />
+              </svg>
+            </div>
             <div class="card-content">
-              <div class="category-icon" style="cursor: move;">
-                <el-icon :size="32"><CollectionTag /></el-icon>
+              <div class="category-icon">
+                <el-icon :size="28"><CollectionTag /></el-icon>
               </div>
               <div class="category-info">
                 <div class="category-name">{{ item.category_name }}</div>
                 <div class="category-meta">
-                  <el-tag size="small" type="info" effect="light">
-                    排序: {{ item.order_num }}
+                  <el-tag size="small" type="info" effect="plain" round>
+                    排序 {{ item.order_num }}
                   </el-tag>
                   <span class="create-time">{{ formatTime(item.createdAt) }}</span>
                 </div>
@@ -67,7 +86,7 @@
           </el-card>
         </template>
       </draggable>
-      
+
       <!-- 无数据展示 -->
       <el-empty
         v-else
@@ -155,7 +174,7 @@ const rules = {
 // 过滤后的分类列表
 const filteredCategories = computed(() => {
   if (!searchQuery.value) return categoryList.value
-  return categoryList.value.filter(item => 
+  return categoryList.value.filter(item =>
     item.category_name.toLowerCase().includes(searchQuery.value.toLowerCase())
   )
 })
@@ -173,30 +192,34 @@ const fetchCategories = async () => {
 }
 
 const handleDragEnd = async () => {
-  loading.value = true
-  try {
-    // 根据新顺序更新所有受影响的 order_num
-    const updatePromises = categoryList.value.map((item, index) => {
-      const newOrder = index + 1 // 或者其他排序逻辑
-      if (item.order_num !== newOrder) {
-        return updateCategory(item.id, { 
-          category_name: item.category_name,
-          order_num: newOrder 
-        })
-      }
-      return null
-    }).filter(p => p !== null)
+  // 收集需要更新的项：只有 order_num 发生变化的才提交
+  const toUpdate = categoryList.value
+    .map((item, index) => {
+      const newOrder = index + 1
+      return item.order_num !== newOrder ? { item, newOrder } : null
+    })
+    .filter(Boolean)
 
-    if (updatePromises.length > 0) {
-      await Promise.all(updatePromises)
-      ElMessage.success('排序已更新')
-      await fetchCategories()
-    }
+  if (toUpdate.length === 0) return
+
+  // 乐观更新本地数据
+  toUpdate.forEach(({ item, newOrder }) => {
+    item.order_num = newOrder
+  })
+
+  try {
+    await Promise.all(
+      toUpdate.map(({ item, newOrder }) =>
+        updateCategory(item.id, {
+          category_name: item.category_name,
+          order_num: newOrder
+        })
+      )
+    )
+    ElMessage.success('排序已更新')
   } catch (error) {
-    ElMessage.error('更新排序失败')
+    ElMessage.error('排序更新失败，正在恢复...')
     await fetchCategories()
-  } finally {
-    loading.value = false
   }
 }
 
@@ -222,7 +245,7 @@ const submitForm = async () => {
     if (valid) {
       submitting.value = true
       try {
-        const payload = { 
+        const payload = {
           category_name: categoryForm.category_name,
           order_num: categoryForm.order_num
         }
@@ -297,6 +320,21 @@ onMounted(fetchCategories)
   box-shadow: 0 0 0 1px var(--el-border-color) inset;
 }
 
+.action-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.drag-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--el-text-color-placeholder);
+  user-select: none;
+}
+
 .category-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -304,19 +342,93 @@ onMounted(fetchCategories)
   padding-bottom: 20px;
 }
 
+/* ---- 卡片 ---- */
 .category-card {
   border-radius: 12px;
   border: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+}
+
+/* 顶部渐变装饰条 */
+.category-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--el-color-primary), var(--el-color-primary-light-3));
+  border-radius: 12px 12px 0 0;
+  transition: height 0.25s ease;
+}
+
+.category-card:hover::before {
+  height: 6px;
 }
 
 .category-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
 }
 
+/* ---- 拖拽手柄 ---- */
+.drag-handle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--el-text-color-placeholder);
+  cursor: grab;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.drag-handle:hover {
+  background-color: var(--el-fill-color-light);
+  color: var(--el-color-primary);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  color: var(--el-color-primary);
+}
+
+/* ---- 拖拽状态 ---- */
+.category-ghost {
+  opacity: 0.4;
+  border: 2px dashed var(--el-color-primary-light-3) !important;
+  border-radius: 12px;
+  background: var(--el-color-primary-light-9) !important;
+}
+
+.category-ghost::before {
+  display: none;
+}
+
+.category-chosen {
+  transform: scale(1.02);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12) !important;
+}
+
+.category-drag {
+  opacity: 0.9;
+  border: 2px solid var(--el-color-primary-light-5) !important;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+.category-drag::before {
+  display: none;
+}
+
+/* ---- 卡片内容 ---- */
 .card-content {
   display: flex;
   align-items: center;
@@ -324,9 +436,9 @@ onMounted(fetchCategories)
 }
 
 .category-icon {
-  width: 56px;
-  height: 56px;
-  background-color: var(--el-color-primary-light-9);
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, var(--el-color-primary-light-8), var(--el-color-primary-light-9));
   color: var(--el-color-primary);
   border-radius: 12px;
   display: flex;
@@ -334,6 +446,11 @@ onMounted(fetchCategories)
   align-items: center;
   margin-right: 16px;
   flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.category-card:hover .category-icon {
+  transform: scale(1.05);
 }
 
 .category-info {
@@ -342,7 +459,7 @@ onMounted(fetchCategories)
 }
 
 .category-name {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--el-text-color-primary);
   margin-bottom: 6px;
@@ -354,20 +471,20 @@ onMounted(fetchCategories)
 .category-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   font-size: 13px;
   color: var(--el-text-color-secondary);
 }
 
 .create-time {
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
 .card-actions {
   display: flex;
   gap: 10px;
-  margin-top: 20px;
-  padding-top: 16px;
+  margin-top: 16px;
+  padding-top: 14px;
   border-top: 1px solid var(--el-border-color-lighter);
   justify-content: flex-end;
 }
@@ -376,7 +493,7 @@ onMounted(fetchCategories)
   margin-top: 100px;
 }
 
-/* 弹窗样式优化 */
+/* ---- 弹窗 ---- */
 .category-dialog :deep(.el-dialog) {
   border-radius: 16px;
 }
@@ -406,20 +523,24 @@ onMounted(fetchCategories)
   gap: 12px;
 }
 
-/* 响应式调整 */
+/* ---- 响应式 ---- */
 @media screen and (max-width: 480px) {
   .category-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .action-bar {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
   }
-  
+
   .search-box {
     max-width: none;
+  }
+
+  .action-right {
+    justify-content: space-between;
   }
 }
 </style>

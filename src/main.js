@@ -8,12 +8,17 @@ import "element-plus/dist/index.css";
 import "element-plus/theme-chalk/dark/css-vars.css";
 import * as ElementPlusIconsVue from "@element-plus/icons-vue";
 import { useUserStore } from "./store/user";
+import baiduMapInit from 'vue3-baidu-map-gl'
 
 const app = createApp(App);
 const pinia = createPinia();
 
 app.use(pinia);
 app.use(ElementPlus, { locale: zhCn });
+app.use(baiduMapInit, {
+  ak: 'YeUx4XZ5alsFPBLCpRK00x9doJ2jdn1J',
+  apiUrl: 'https://api.map.baidu.com/api?type=webgl&v=1.0&ak=YeUx4XZ5alsFPBLCpRK00x9doJ2jdn1J&'
+});
 
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component);

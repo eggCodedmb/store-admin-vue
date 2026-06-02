@@ -182,7 +182,7 @@
           <el-dropdown trigger="click" class="user-dropdown">
             <div class="user-info">
               <el-avatar :size="32" :src="userStore.userInfo?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'" />
-              <span class="username">{{ userStore.userInfo?.username || 'Admin' }}</span>
+              <span class="username">{{ userStore.userInfo?.nick_name || userStore.userInfo?.user_name || 'Admin' }}</span>
               <el-icon><ArrowDown /></el-icon>
             </div>
             <template #dropdown>

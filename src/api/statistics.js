@@ -2,7 +2,7 @@ import request from '../utils/request'
 
 /**
  * 获取概览统计数据
- * 包括：总商品数、今日订单、活跃用户、月销售额
+ * 包括：总商品数、今日订单、活跃用户、月销售额、趋势百分比
  */
 export function getSummary() {
   return request({
@@ -40,5 +40,17 @@ export function getCategoryDistribution() {
   return request({
     url: '/tj/category-distribution',
     method: 'get'
+  })
+}
+
+/**
+ * 获取最近订单列表
+ * @param {object} params - { limit: number }
+ */
+export function getRecentOrders(params) {
+  return request({
+    url: '/tj/recent-orders',
+    method: 'get',
+    params
   })
 }

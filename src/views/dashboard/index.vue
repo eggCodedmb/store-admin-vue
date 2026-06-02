@@ -52,7 +52,7 @@
       <el-col :span="16">
         <el-card shadow="never" header="最新订单">
           <el-table :data="recentOrders" style="width: 100%" size="small">
-            <el-table-column prop="orderId" label="订单编号" width="120" />
+            <el-table-column prop="orderId" label="订单编号" min-width="120" show-overflow-tooltip />
             <el-table-column prop="customer" label="客户" />
             <el-table-column prop="amount" label="金额">
               <template #default="scope">
@@ -88,7 +88,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import { getSummary, getSalesTrend, getCategoryDistribution } from '../../api/statistics'
+import { getSummary, getSalesTrend, getCategoryDistribution, getRecentOrders } from '../../api/statistics'
 import { ElMessage } from 'element-plus'
 import BaseChart from '../../components/BaseChart.vue'
 
@@ -246,13 +246,7 @@ const categoryPieOption = computed(() => ({
   ]
 }))
 
-const recentOrders = ref([
-  { orderId: 'ORD001', customer: '张三', amount: 299.00, status: '已支付', time: '2026-06-01 10:23:45' },
-  { orderId: 'ORD002', customer: '李四', amount: 129.50, status: '待发货', time: '2026-06-01 11:05:12' },
-  { orderId: 'ORD003', customer: '王五', amount: 88.00, status: '已收货', time: '2026-06-01 09:15:30' },
-  { orderId: 'ORD004', customer: '赵六', amount: 1599.00, status: '待支付', time: '2026-05-31 22:45:10' },
-  { orderId: 'ORD005', customer: '孙七', amount: 45.00, status: '已取消', time: '2026-05-31 20:12:00' }
-])
+const recentOrders = ref([])
 
 const quickLinks = [
   { name: '发布商品', icon: 'Plus', color: '#409EFF', path: '/goods_manage/add' },
@@ -283,16 +277,27 @@ const fetchStatistics = async () => {
     const data = res.result
     statistics.value.forEach(item => {
       if (item.key === 'monthlySales') {
-        item.value = `¥ ${data[item.key].toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+        item.value = `¥ ${parseFloat(data[item.key]).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
       } else {
         item.value = data[item.key].toLocaleString()
+      }
+      if (data.trends && data.trends[item.key] !== undefined) {
+        item.trend = data.trends[item.key]
       }
     })
   } catch (error) {
     console.error('Fetch statistics failed', error)
-    // ElMessage.error('获取统计数据失败')
   } finally {
     loading.value = false
+  }
+}
+
+const fetchRecentOrders = async () => {
+  try {
+    const res = await getRecentOrders({ limit: 5 })
+    recentOrders.value = res.result || []
+  } catch (error) {
+    console.error('Fetch recent orders failed', error)
   }
 }
 
@@ -323,6 +328,7 @@ onMounted(() => {
   fetchStatistics()
   fetchTrendData()
   fetchCategoryDistribution()
+  fetchRecentOrders()
 })
 </script>
 

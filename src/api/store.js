@@ -8,6 +8,28 @@ export function getStoreList(params) {
   })
 }
 
+export function getStoreAllList(params) {
+  return request({
+    url: '/store/all',
+    method: 'get',
+    params
+  })
+}
+
+export function getStoreMapList() {
+  return request({
+    url: '/store/map-list',
+    method: 'get'
+  })
+}
+
+export function getStoreDetail(id) {
+  return request({
+    url: `/store/detail/${id}`,
+    method: 'get'
+  })
+}
+
 export function createStore(data) {
   return request({
     url: '/store',
@@ -18,7 +40,7 @@ export function createStore(data) {
 
 export function updateStore(id, data) {
   return request({
-    url: /store/ + id,
+    url: '/store/' + id,
     method: 'put',
     data
   })
@@ -26,7 +48,7 @@ export function updateStore(id, data) {
 
 export function deleteStore(id) {
   return request({
-    url: /store/ + id,
+    url: '/store/' + id,
     method: 'delete'
   })
 }
