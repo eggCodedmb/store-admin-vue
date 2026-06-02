@@ -67,9 +67,7 @@
           <template #default="{ row }">
             <div class="notice-cell">
               <div class="notice-icon-wrap" :style="{ background: getTypeGradient(row.type) }">
-                <el-icon v-if="row.icon" size="18" color="#fff">
-                  <component :is="row.icon" />
-                </el-icon>
+                <SvgIcon v-if="row.icon" :icon="row.icon" :size="18" color="#fff" />
                 <el-icon v-else size="18" color="#fff"><Bell /></el-icon>
               </div>
               <div class="notice-detail">
@@ -189,14 +187,7 @@
           </el-form-item>
         </div>
         <el-form-item label="图标">
-          <el-select v-model="form.icon" placeholder="选择图标（可选）" style="width: 100%" clearable>
-            <el-option v-for="icon in iconOptions" :key="icon" :label="icon" :value="icon">
-              <div style="display: flex; align-items: center; gap: 8px">
-                <el-icon><component :is="icon" /></el-icon>
-                <span>{{ icon }}</span>
-              </div>
-            </el-option>
-          </el-select>
+          <IconPicker v-model="form.icon" />
         </el-form-item>
         <el-form-item label="内容" prop="content">
           <el-input v-model="form.content" type="textarea" :rows="6" placeholder="请输入公告内容" />
@@ -216,7 +207,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { getNoticeList, createNotice, updateNotice, deleteNotice, getNoticeIcons } from '../../../api/notice'
+import { getNoticeList, createNotice, updateNotice, deleteNotice } from '../../../api/notice'
 import { getStoreList } from '../../../api/store'
 import { useUserStore } from '../../../store/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -224,7 +215,6 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 const userStore = useUserStore()
 
 const noticeList = ref([])
-const iconOptions = ref([])
 const storeOptions = ref([])
 const total = ref(0)
 const loading = ref(false)
@@ -276,15 +266,6 @@ const fetchNotices = async () => {
   }
 }
 
-const fetchIcons = async () => {
-  try {
-    const res = await getNoticeIcons()
-    iconOptions.value = res.result
-  } catch (error) {
-    console.error('获取图标失败:', error)
-  }
-}
-
 const fetchStores = async () => {
   try {
     const res = await getStoreList({ pageNum: 1, pageSize: 100 })
@@ -314,7 +295,7 @@ const handleCommand = (cmd, row) => {
 }
 
 const getTypeName = (type) => ({ 1: '通知', 2: '公告', 3: '活动' })[type] || '未知'
-const getTypeTag = (type) => ({ 1: '', 2: 'warning', 3: 'danger' })[type] || ''
+const getTypeTag = (type) => ({ 1: 'primary', 2: 'warning', 3: 'danger' })[type] || 'info'
 const getTypeGradient = (type) => ({
   1: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   2: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)',
@@ -387,7 +368,6 @@ const handleDelete = (row) => {
 
 onMounted(() => {
   fetchNotices()
-  fetchIcons()
   fetchStores()
 })
 </script>

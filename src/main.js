@@ -9,6 +9,8 @@ import "element-plus/theme-chalk/dark/css-vars.css";
 import * as ElementPlusIconsVue from "@element-plus/icons-vue";
 import { useUserStore } from "./store/user";
 import baiduMapInit from 'vue3-baidu-map-gl'
+import SvgIcon from './components/SvgIcon.vue'
+import IconPicker from './components/IconPicker.vue'
 
 const app = createApp(App);
 const pinia = createPinia();
@@ -23,6 +25,10 @@ app.use(baiduMapInit, {
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component);
 }
+
+// 注册通用图标组件
+app.component('SvgIcon', SvgIcon)
+app.component('IconPicker', IconPicker)
 
 router.beforeEach(async (to) => {
   const userStore = useUserStore();
