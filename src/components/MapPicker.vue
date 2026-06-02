@@ -6,24 +6,27 @@
         placeholder="搜索地址"
         clearable
         @keyup.enter="handleSearch"
+        @clear="searchResults = []"
       >
         <template #append>
           <el-button icon="Search" @click="handleSearch" />
         </template>
       </el-input>
       <div v-if="searchResults.length" class="search-results">
-        <div
-          v-for="(item, index) in searchResults"
-          :key="index"
-          class="search-result-item"
-          @click="selectSearchResult(item)"
-        >
-          <el-icon><Location /></el-icon>
-          <div class="result-info">
-            <div class="result-title">{{ item.title }}</div>
-            <div class="result-address">{{ item.address }}</div>
+        <el-scrollbar max-height="320px">
+          <div
+            v-for="(item, index) in searchResults"
+            :key="index"
+            class="search-result-item"
+            @click="selectSearchResult(item)"
+          >
+            <el-icon><Location /></el-icon>
+            <div class="result-info">
+              <div class="result-title">{{ item.title }}</div>
+              <div class="result-address">{{ item.address }}</div>
+            </div>
           </div>
-        </div>
+        </el-scrollbar>
       </div>
     </div>
 
@@ -44,6 +47,11 @@
         :position="markerPosition"
         :enable-dragging="true"
         @dragend="onMarkerDragend"
+      />
+      <BMarker
+        v-if="userLocation && locationIcon"
+        :position="userLocation"
+        :icon="locationIcon"
       />
     </BMap>
 
@@ -80,10 +88,23 @@ const emit = defineEmits(['update:modelValue', 'update:address', 'location-chang
 const searchText = ref('')
 const searchResults = ref([])
 const markerPosition = ref(null)
+const userLocation = ref(null)
 const mapCenter = ref({ lng: 116.404, lat: 39.915 })
 const mapZoom = ref(15)
 const resolvedAddress = ref('')
 let mapInstance = null
+const locationIcon = ref(null)
+
+const createLocationIcon = () => {
+  if (!window.BMapGL || locationIcon.value) return
+  const svg = 'data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">'
+    + '<circle cx="12" cy="12" r="8" fill="#409EFF" fill-opacity="0.3"/>'
+    + '<circle cx="12" cy="12" r="5" fill="#409EFF" stroke="#fff" stroke-width="2"/>'
+    + '</svg>'
+  )
+  locationIcon.value = new BMapGL.Icon(svg, new BMapGL.Size(24, 24))
+}
 
 onMounted(() => {
   if (props.modelValue && props.modelValue.lng && props.modelValue.lat) {
@@ -106,16 +127,29 @@ watch(() => props.modelValue, (val) => {
 }, { deep: true })
 
 const onMapInitd = (map) => {
-  mapInstance = map
-  // 没有初始位置时，通过 IP 定位到当前位置
-  if (!props.modelValue && window.BMapGL) {
-    const geolocation = new BMapGL.Geolocation()
-    geolocation.getCurrentPosition((result) => {
-      if (geolocation.getStatus() === window.BMAP_STATUS_SUCCESS) {
-        mapCenter.value = { lng: result.point.lng, lat: result.point.lat }
-        mapZoom.value = 15
-      }
-    }, { enableHighAccuracy: false })
+  try {
+    mapInstance = map?.map || map?.getMap?.() || map
+  } catch {
+    mapInstance = map
+  }
+  createLocationIcon()
+  // IP 定位，显示当前位置蓝点
+  if (window.BMapGL) {
+    try {
+      const geolocation = new BMapGL.Geolocation()
+      geolocation.getCurrentPosition((result) => {
+        if (geolocation.getStatus() === window.BMAP_STATUS_SUCCESS && result?.point) {
+          userLocation.value = { lng: result.point.lng, lat: result.point.lat }
+          // 没有初始位置时，以定位为中心
+          if (!props.modelValue) {
+            mapCenter.value = { lng: result.point.lng, lat: result.point.lat }
+            mapZoom.value = 15
+          }
+        }
+      }, { enableHighAccuracy: false })
+    } catch {
+      // 定位服务不可用时静默忽略
+    }
   }
 }
 
@@ -158,47 +192,64 @@ const reverseGeocode = (lng, lat) => {
 }
 
 const handleSearch = () => {
-  if (!searchText.value.trim()) {
+  const keyword = searchText.value.trim()
+  if (!keyword) {
     searchResults.value = []
     return
   }
   if (!window.BMapGL) return
 
-  const geocoder = new BMapGL.Geocoder()
-  geocoder.getPoint(searchText.value.trim(), (point) => {
-    if (point) {
-      searchResults.value = [{
-        title: searchText.value.trim(),
-        address: '',
-        point: { lng: point.lng, lat: point.lat }
-      }]
-      // 自动选中第一个结果
-      selectSearchResult(searchResults.value[0])
-    } else {
-      searchResults.value = []
+  const local = new BMapGL.LocalSearch(mapInstance || '全国', {
+    pageCapacity: 10,
+    renderOptions: { map: null },
+    onSearchComplete: (results) => {
+      if (local.getStatus() === window.BMAP_STATUS_SUCCESS && results) {
+        const list = []
+        const count = Math.min(results.getCurrentNumPois(), 10)
+        for (let i = 0; i < count; i++) {
+          const poi = results.getPoi(i)
+          if (poi && poi.point) {
+            list.push({
+              title: poi.title || '',
+              address: poi.address || '',
+              point: { lng: poi.point.lng, lat: poi.point.lat }
+            })
+          }
+        }
+        searchResults.value = list
+      } else {
+        searchResults.value = []
+      }
     }
-  }, '全国')
+  })
+  local.search(keyword)
 }
 
 const selectSearchResult = (item) => {
-  markerPosition.value = { ...item.point }
-  mapCenter.value = { ...item.point }
-  mapZoom.value = 17
+  const point = { ...item.point }
+  markerPosition.value = point
+  if (mapInstance) {
+    const bp = new BMapGL.Point(point.lng, point.lat)
+    mapInstance.centerAndZoom(bp, 17)
+  } else {
+    mapCenter.value = point
+    mapZoom.value = 17
+  }
   searchResults.value = []
-  searchText.value = ''
+  searchText.value = item.address || item.title
   resolvedAddress.value = item.address || item.title
 
-  emit('update:modelValue', { ...item.point })
+  emit('update:modelValue', point)
   emit('update:address', item.address || item.title)
 
   if (window.BMapGL) {
     const geocoder = new BMapGL.Geocoder()
-    const point = new BMapGL.Point(item.point.lng, item.point.lat)
-    geocoder.getLocation(point, (result) => {
+    const bp = new BMapGL.Point(point.lng, point.lat)
+    geocoder.getLocation(bp, (result) => {
       if (result) {
         emit('location-change', {
-          lng: item.point.lng,
-          lat: item.point.lat,
+          lng: point.lng,
+          lat: point.lat,
           address: result.address,
           province: result.addressComponents?.province || '',
           city: result.addressComponents?.city || '',
@@ -234,8 +285,6 @@ const selectSearchResult = (item) => {
   border-radius: 4px;
   margin-top: 4px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  max-height: 240px;
-  overflow-y: auto;
 }
 
 .search-result-item {

@@ -124,12 +124,12 @@
       :title="dialogType === 'create' ? '新增门店' : '编辑门店'"
       width="1280px"
       destroy-on-close
-      top="3vh"
+      top="2vh"
     >
       <div class="store-form-layout">
         <!-- 左侧：表单 -->
         <div class="form-left">
-          <el-scrollbar max-height="calc(80vh - 160px)">
+          <el-scrollbar max-height="calc(90vh - 120px)">
             <el-form
               ref="storeFormRef"
               :model="storeForm"
@@ -673,7 +673,7 @@ fetchStores()
 .store-form-layout {
   display: flex;
   gap: 24px;
-  min-height: 500px;
+  min-height: 600px;
 }
 
 .form-left {
@@ -689,7 +689,7 @@ fetchStores()
   flex-direction: column;
   gap: 16px;
   min-width: 0;
-  height: calc(80vh - 160px);
+  height: calc(90vh - 120px);
   overflow-y: auto;
 }
 
@@ -720,7 +720,7 @@ fetchStores()
 /* 地图区域 */
 .map-section {
   flex: 1;
-  height: 320px;
+  height: 420px;
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
   overflow: hidden;

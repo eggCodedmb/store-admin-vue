@@ -39,23 +39,42 @@
           :show="activeStoreId === store.id"
           @close="activeStoreId = null"
         >
-          <div class="store-info-window">
-            <div class="info-header">
-              <strong>{{ store.name }}</strong>
-              <el-tag
-                :type="store.status === 1 ? 'success' : 'info'"
-                size="small"
-                effect="dark"
-                style="margin-left: 8px"
-              >
+          <div class="info-card">
+            <div class="info-card-cover" v-if="store.cover">
+              <img :src="formatImageUrl(store.cover)" class="info-card-img" />
+              <div class="info-card-cover-overlay"></div>
+              <span class="info-card-badge" :class="store.status === 1 ? 'badge-open' : 'badge-closed'">
+                <span class="badge-dot"></span>
                 {{ store.status === 1 ? '营业中' : '已关闭' }}
-              </el-tag>
+              </span>
             </div>
-            <p class="info-address">{{ store.address || '暂无地址' }}</p>
-            <p v-if="store.phone" class="info-phone">📞 {{ store.phone }}</p>
-            <p v-if="store.province || store.city" class="info-location">
-              📍 {{ store.province }}{{ store.city }}{{ store.district }}
-            </p>
+            <div v-else class="info-card-cover info-card-cover--empty">
+              <svg class="cover-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+              <span class="info-card-badge" :class="store.status === 1 ? 'badge-open' : 'badge-closed'">
+                <span class="badge-dot"></span>
+                {{ store.status === 1 ? '营业中' : '已关闭' }}
+              </span>
+            </div>
+            <div class="info-card-body">
+              <h3 class="info-card-name">{{ store.name }}</h3>
+              <div class="info-card-row">
+                <svg class="info-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span class="info-card-text">{{ store.address || '暂无地址' }}</span>
+              </div>
+              <div v-if="store.phone" class="info-card-row">
+                <svg class="info-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                <span class="info-card-text">{{ store.phone }}</span>
+              </div>
+            </div>
           </div>
         </BInfoWindow>
       </template>
@@ -273,31 +292,119 @@ const focusStore = (store) => {
   text-overflow: ellipsis;
 }
 
-.store-info-window {
-  font-size: 13px;
-  line-height: 1.8;
-  min-width: 200px;
+.info-card {
+  width: 280px;
+  margin: -8px -10px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 }
 
-.info-header {
+.info-card-cover {
+  position: relative;
+  width: 100%;
+  height: 130px;
+  overflow: hidden;
+}
+
+.info-card-cover--empty {
+  background: linear-gradient(135deg, #e8edf2 0%, #d5dce4 100%);
   display: flex;
   align-items: center;
-  margin-bottom: 4px;
+  justify-content: center;
 }
 
-.info-address {
-  color: #666;
-  margin: 0;
+.cover-empty-icon {
+  width: 36px;
+  height: 36px;
+  color: #b0bac5;
 }
 
-.info-phone {
-  color: #333;
-  margin: 0;
+.info-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-.info-location {
-  color: #999;
-  margin: 0;
+.info-card-cover-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.15));
+  pointer-events: none;
+}
+
+.info-card-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 20px;
+  color: #fff;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.badge-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 4px currentColor;
+}
+
+.badge-open {
+  background: rgba(103, 194, 58, 0.85);
+}
+
+.badge-closed {
+  background: rgba(144, 147, 153, 0.85);
+}
+
+.info-card-body {
+  padding: 12px 14px 14px;
+}
+
+.info-card-name {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.info-card-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
   font-size: 12px;
+  color: #8c939d;
+  line-height: 1.5;
+}
+
+.info-card-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #b0bac5;
+}
+
+.info-card-text {
+  flex: 1;
+  min-width: 0;
+  word-break: break-all;
 }
 </style>
