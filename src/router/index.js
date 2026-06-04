@@ -142,6 +142,19 @@ export const asyncRoutes = [
     ],
   },
   {
+    path: "/checkin_manage",
+    component: Layout,
+    meta: { title: "活动管理", icon: "Calendar" },
+    children: [
+      {
+        path: "",
+        component: () => import("../views/checkin/index.vue"),
+        name: "CheckinManage",
+        meta: { title: "签到配置", icon: "Calendar" },
+      },
+    ],
+  },
+  {
     path: "/system",
     component: Layout,
     meta: { title: "系统管理", icon: "Setting" },

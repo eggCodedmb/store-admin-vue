@@ -55,6 +55,10 @@
             <el-icon><Ticket /></el-icon>
             <span>优惠券管理</span>
           </el-menu-item>
+          <el-menu-item v-if="userStore.menus.includes('/checkin_manage')" index="/checkin_manage">
+            <el-icon><Calendar /></el-icon>
+            <span>活动管理</span>
+          </el-menu-item>
           <el-sub-menu v-if="userStore.menus.includes('/system')" index="/system">
             <template #title>
               <el-icon><Setting /></el-icon>
