@@ -129,6 +129,19 @@ export const asyncRoutes = [
     ],
   },
   {
+    path: "/coupon_manage",
+    component: Layout,
+    meta: { title: "优惠券管理", icon: "Ticket" },
+    children: [
+      {
+        path: "",
+        component: () => import("../views/coupon/index.vue"),
+        name: "CouponManage",
+        meta: { title: "优惠券列表", icon: "Ticket" },
+      },
+    ],
+  },
+  {
     path: "/system",
     component: Layout,
     meta: { title: "系统管理", icon: "Setting" },

@@ -51,6 +51,10 @@
             <el-icon><Shop /></el-icon>
             <span>门店管理</span>
           </el-menu-item>
+          <el-menu-item v-if="userStore.menus.includes('/coupon_manage')" index="/coupon_manage">
+            <el-icon><Ticket /></el-icon>
+            <span>优惠券管理</span>
+          </el-menu-item>
           <el-sub-menu v-if="userStore.menus.includes('/system')" index="/system">
             <template #title>
               <el-icon><Setting /></el-icon>
