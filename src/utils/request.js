@@ -1,7 +1,7 @@
 import axios from "axios";
 import { ElMessage } from "element-plus";
 
-export const baseURL = "";
+export const baseURL = "/api";
 
 const service = axios.create({
   baseURL: baseURL,
