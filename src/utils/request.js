@@ -1,7 +1,7 @@
 import axios from "axios";
 import { ElMessage } from "element-plus";
 
-export const baseURL = "http://127.0.0.1:8800";
+export const baseURL = "";
 
 const service = axios.create({
   baseURL: baseURL,

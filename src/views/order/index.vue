@@ -231,6 +231,23 @@
           </div>
         </div>
 
+        <!-- 优惠券信息 -->
+        <div v-if="currentOrder.user_coupons?.length" class="coupon-block">
+          <div class="block-title">
+            <el-icon><Ticket /></el-icon>优惠券信息
+          </div>
+          <div v-for="uc in currentOrder.user_coupons" :key="uc.id" class="coupon-row">
+            <div class="coupon-main">
+              <el-tag effect="plain" size="small" type="warning">{{ getCouponTypeLabel(uc.template?.type) }}</el-tag>
+              <span class="coupon-name">{{ uc.template?.name || '—' }}</span>
+            </div>
+            <div class="coupon-detail">
+              <span v-if="uc.template?.min_spend > 0">满¥{{ uc.template.min_spend }}可用</span>
+              <span v-if="uc.template?.Store">{{ uc.template.Store.name }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- 商品清单 -->
         <div class="goods-block">
           <div class="block-title">
@@ -266,8 +283,11 @@
 
         <!-- 价格汇总 -->
         <div class="total-block">
-          <div class="total-row">
-            <span>商品小计</span><span>¥{{ currentOrder.total_price || '0.00' }}</span>
+          <div v-if="currentOrder.original_price && Number(currentOrder.original_price) > 0" class="total-row">
+            <span>商品原价</span><span>¥{{ currentOrder.original_price }}</span>
+          </div>
+          <div v-if="currentOrder.discount_amount && Number(currentOrder.discount_amount) > 0" class="total-row discount">
+            <span>优惠券抵扣</span><span class="discount-amount">-¥{{ currentOrder.discount_amount }}</span>
           </div>
           <div class="total-row">
             <span>运费</span><span>¥{{ currentOrder.shipping_fee || '0.00' }}</span>
@@ -288,7 +308,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { getOrderList, updateOrderStatus, deleteOrder, getOrderDetail } from '../../api/order'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { baseURL } from '../../utils/request'
-import { Search, Refresh, View, Position, Delete, Location, Van, User, CreditCard, ShoppingCart, Picture } from '@element-plus/icons-vue'
+import { Search, Refresh, View, Position, Delete, Location, Van, User, CreditCard, ShoppingCart, Picture, Ticket } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
 const orderList = ref([])
@@ -388,6 +408,11 @@ const handleSearch = () => {
 const getStatusLabel = (state) => {
   const labels = { 0: '待支付', 1: '已支付', 2: '待收货', 3: '已完成', 4: '已取消' }
   return labels[state] || '未知'
+}
+
+const getCouponTypeLabel = (type) => {
+  const labels = { 1: '满减券', 2: '折扣券', 3: '固定金额券' }
+  return labels[type] || '优惠券'
 }
 
 const getStatusType = (state) => {
@@ -880,6 +905,46 @@ onMounted(fetchOrders)
 }
 .pay-icon.alipay {
   background: #1677FF;
+}
+
+/* 优惠券信息 */
+.coupon-block {
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 12px;
+  padding: 18px;
+}
+.coupon-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  margin-top: 10px;
+  border-radius: 10px;
+  background: var(--el-color-success-light-9);
+}
+.coupon-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.coupon-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+.coupon-detail {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.discount-amount {
+  color: var(--el-color-danger);
+  font-weight: 500;
+}
+.total-row.discount {
+  color: var(--el-color-danger);
 }
 
 /* 商品清单 */
