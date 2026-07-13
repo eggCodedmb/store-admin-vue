@@ -420,6 +420,9 @@ const closedCount = computed(() => storeList.value.filter(s => s.status !== 1).l
 const formatImageUrl = (url) => {
   if (!url) return ''
   if (url.startsWith('http')) return url
+  if (url.startsWith('/online') || url.startsWith('/local') || url.startsWith('/test') || url.startsWith('online') || url.startsWith('local') || url.startsWith('test')) {
+    return url.startsWith('/') ? url : '/' + url
+  }
   return baseURL + url
 }
 

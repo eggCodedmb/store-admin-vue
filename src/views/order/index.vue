@@ -220,8 +220,8 @@
             <div class="info-row">
               <span class="info-label">支付方式</span>
               <span class="info-value pay-method">
-                <span class="pay-icon" :class="currentOrder.pay_type === 1 ? 'wechat' : 'alipay'" />
-                {{ currentOrder.pay_type === 1 ? '微信支付' : '支付宝' }}
+                <span class="pay-icon" :class="currentOrder.pay_type === 1 ? 'wechat' : currentOrder.pay_type === 2 ? 'alipay' : currentOrder.pay_type === 3 ? 'unionpay' : ''" />
+                {{ currentOrder.pay_type === 1 ? '微信支付' : currentOrder.pay_type === 2 ? '支付宝' : currentOrder.pay_type === 3 ? '云闪付' : '未支付' }}
               </span>
             </div>
             <div class="info-row">
@@ -320,6 +320,9 @@ const currentOrder = ref(null)
 const formatImageUrl = (url) => {
   if (!url) return ''
   if (url.startsWith('http')) return url
+  if (url.startsWith('/online') || url.startsWith('/local') || url.startsWith('/test') || url.startsWith('online') || url.startsWith('local') || url.startsWith('test')) {
+    return url.startsWith('/') ? url : '/' + url
+  }
   return baseURL + url
 }
 
@@ -905,6 +908,9 @@ onMounted(fetchOrders)
 }
 .pay-icon.alipay {
   background: #1677FF;
+}
+.pay-icon.unionpay {
+  background: #D92B34;
 }
 
 /* 优惠券信息 */
