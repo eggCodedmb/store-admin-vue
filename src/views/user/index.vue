@@ -1,4 +1,4 @@
-﻿﻿﻿<template>
+<template>
   <div class="user-manage-container">
     <!-- 顶部统计卡片 -->
     <div class="stat-cards">
@@ -149,6 +149,18 @@
           </template>
         </el-table-column>
 
+        <el-table-column prop="points" label="积分" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag type="warning" effect="plain" round>{{ row.points || 0 }}</el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="level" label="会员等级" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag type="success" effect="dark" round>V{{ row.level || 1 }}</el-tag>
+          </template>
+        </el-table-column>
+
         <el-table-column label="角色" min-width="180">
           <template #default="{ row }">
             <template v-if="row.Roles && row.Roles.length > 0">
@@ -238,6 +250,14 @@
         </el-form-item>
         <el-form-item label="邮箱" prop="email">
           <el-input v-model="userForm.email" placeholder="example@domain.com" prefix-icon="Message" />
+        </el-form-item>
+        <el-form-item label="积分" prop="points" v-if="dialogType === 'edit'">
+          <el-input-number v-model="userForm.points" :min="0" placeholder="请输入积分" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="等级" prop="level" v-if="dialogType === 'edit'">
+          <el-select v-model="userForm.level" placeholder="请选择会员等级" style="width: 100%">
+            <el-option v-for="i in 10" :key="i" :label="'V' + i" :value="i" />
+          </el-select>
         </el-form-item>
         <el-form-item label="密码" prop="password" v-if="dialogType === 'create'">
           <el-input v-model="userForm.password" type="password" show-password placeholder="请输入 6-16 位密码" prefix-icon="Lock" />
@@ -344,7 +364,9 @@ const userForm = reactive({
   nick_name: '',
   email: '',
   password: '',
-  store_ids: []
+  store_ids: [],
+  points: 0,
+  level: 1
 })
 
 // 角色分配相关
@@ -442,7 +464,7 @@ const handleCommand = (cmd, row) => {
 
 const handleCreate = () => {
   dialogType.value = 'create'
-  Object.assign(userForm, { id: null, user_name: '', nick_name: '', email: '', password: '', store_ids: [] })
+  Object.assign(userForm, { id: null, user_name: '', nick_name: '', email: '', password: '', store_ids: [], points: 0, level: 1 })
   dialogVisible.value = true
 }
 
@@ -516,7 +538,9 @@ const submitForm = async () => {
             id: userForm.id,
             nick_name: userForm.nick_name,
             email: userForm.email,
-            store_ids: userForm.store_ids
+            store_ids: userForm.store_ids,
+            points: userForm.points,
+            level: userForm.level
           })
           ElMessage.success('修改信息成功')
         }

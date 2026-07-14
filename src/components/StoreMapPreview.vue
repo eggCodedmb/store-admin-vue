@@ -31,11 +31,13 @@
 
       <template v-for="store in storeList" :key="store.id">
         <BMarker
-          :position="{ lng: Number(store.longitude), lat: Number(store.latitude) }"
+          v-if="store.bdLongitude && store.bdLatitude"
+          :position="{ lng: Number(store.bdLongitude), lat: Number(store.bdLatitude) }"
           @click="openInfoWindow(store)"
         />
         <BInfoWindow
-          :position="{ lng: Number(store.longitude), lat: Number(store.latitude) }"
+          v-if="store.bdLongitude && store.bdLatitude"
+          :position="{ lng: Number(store.bdLongitude), lat: Number(store.bdLatitude) }"
           :show="activeStoreId === store.id"
           @close="activeStoreId = null"
         >
@@ -119,6 +121,7 @@
 import { ref } from 'vue'
 import { getStoreMapList } from '../api/store'
 import { baseURL } from '../utils/request'
+import { gcj02tobd09 } from '../utils/coord'
 
 const storeList = ref([])
 const mapCenter = ref({ lng: 116.404, lat: 39.915 })
@@ -163,11 +166,23 @@ const onMapInitd = (map) => {
 const fetchStores = async () => {
   try {
     const res = await getStoreMapList()
-    storeList.value = res.result || []
+    const rawList = res.result || []
+    // Convert GCJ-02 database coordinates to BD-09 for map rendering
+    storeList.value = rawList.map(s => {
+      if (s.longitude && s.latitude) {
+        const bd = gcj02tobd09(s.longitude, s.latitude)
+        return {
+          ...s,
+          bdLongitude: bd.lng,
+          bdLatitude: bd.lat
+        }
+      }
+      return s
+    })
     if (storeList.value.length > 0 && mapInstance) {
       const points = storeList.value
-        .filter(s => s.longitude && s.latitude)
-        .map(s => new BMapGL.Point(Number(s.longitude), Number(s.latitude)))
+        .filter(s => s.bdLongitude && s.bdLatitude)
+        .map(s => new BMapGL.Point(Number(s.bdLongitude), Number(s.bdLatitude)))
       if (points.length > 0) {
         if (typeof mapInstance.setViewport === 'function') {
           mapInstance.setViewport(points)
@@ -192,8 +207,8 @@ const openInfoWindow = (store) => {
 
 const focusStore = (store) => {
   activeStoreId.value = store.id
-  if (mapInstance && store.longitude && store.latitude) {
-    const point = new BMapGL.Point(Number(store.longitude), Number(store.latitude))
+  if (mapInstance && store.bdLongitude && store.bdLatitude) {
+    const point = new BMapGL.Point(Number(store.bdLongitude), Number(store.bdLatitude))
     mapInstance.centerAndZoom(point, 17)
   }
 }

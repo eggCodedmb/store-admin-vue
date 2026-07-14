@@ -71,6 +71,7 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
+import { bd09togcj02, gcj02tobd09 } from '../utils/coord'
 
 const props = defineProps({
   modelValue: {
@@ -108,8 +109,9 @@ const createLocationIcon = () => {
 
 onMounted(() => {
   if (props.modelValue && props.modelValue.lng && props.modelValue.lat) {
-    markerPosition.value = { ...props.modelValue }
-    mapCenter.value = { ...props.modelValue }
+    const bd = gcj02tobd09(props.modelValue.lng, props.modelValue.lat)
+    markerPosition.value = bd
+    mapCenter.value = bd
     mapZoom.value = 17
   }
   if (props.address) {
@@ -119,9 +121,10 @@ onMounted(() => {
 
 watch(() => props.modelValue, (val) => {
   if (val && val.lng && val.lat) {
-    if (!markerPosition.value || markerPosition.value.lng !== val.lng || markerPosition.value.lat !== val.lat) {
-      markerPosition.value = { ...val }
-      mapCenter.value = { ...val }
+    const bd = gcj02tobd09(val.lng, val.lat)
+    if (!markerPosition.value || markerPosition.value.lng !== bd.lng || markerPosition.value.lat !== bd.lat) {
+      markerPosition.value = bd
+      mapCenter.value = bd
     }
   }
 }, { deep: true })
@@ -157,7 +160,8 @@ const onMapClick = (e) => {
   const { lng, lat } = e.latlng || e.point || e
   if (lng && lat) {
     markerPosition.value = { lng, lat }
-    emit('update:modelValue', { lng, lat })
+    const gcj = bd09togcj02(lng, lat)
+    emit('update:modelValue', gcj)
     reverseGeocode(lng, lat)
   }
 }
@@ -166,7 +170,8 @@ const onMarkerDragend = (e) => {
   const point = e.latlng || e.point || e
   if (point && point.lng && point.lat) {
     markerPosition.value = { lng: point.lng, lat: point.lat }
-    emit('update:modelValue', { lng: point.lng, lat: point.lat })
+    const gcj = bd09togcj02(point.lng, point.lat)
+    emit('update:modelValue', gcj)
     reverseGeocode(point.lng, point.lat)
   }
 }
@@ -179,9 +184,10 @@ const reverseGeocode = (lng, lat) => {
     if (result) {
       resolvedAddress.value = result.address
       emit('update:address', result.address)
+      const gcj = bd09togcj02(lng, lat)
       emit('location-change', {
-        lng,
-        lat,
+        lng: gcj.lng,
+        lat: gcj.lat,
         address: result.address,
         province: result.addressComponents?.province || '',
         city: result.addressComponents?.city || '',
@@ -239,7 +245,8 @@ const selectSearchResult = (item) => {
   searchText.value = item.address || item.title
   resolvedAddress.value = item.address || item.title
 
-  emit('update:modelValue', point)
+  const gcj = bd09togcj02(point.lng, point.lat)
+  emit('update:modelValue', gcj)
   emit('update:address', item.address || item.title)
 
   if (window.BMapGL) {
@@ -248,8 +255,8 @@ const selectSearchResult = (item) => {
     geocoder.getLocation(bp, (result) => {
       if (result) {
         emit('location-change', {
-          lng: point.lng,
-          lat: point.lat,
+          lng: gcj.lng,
+          lat: gcj.lat,
           address: result.address,
           province: result.addressComponents?.province || '',
           city: result.addressComponents?.city || '',
