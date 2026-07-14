@@ -6,7 +6,21 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     port: 3000,
-    open: true
+    open: true,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:81',
+        changeOrigin: true
+      },
+      '/online': {
+        target: 'http://127.0.0.1:81',
+        changeOrigin: true
+      },
+      '/local': {
+        target: 'http://127.0.0.1:81',
+        changeOrigin: true
+      }
+    }
   },
   build: {
     chunkSizeWarningLimit: 1500,

@@ -155,6 +155,19 @@ export const asyncRoutes = [
     ],
   },
   {
+    path: "/banner_manage",
+    component: Layout,
+    meta: { title: "Banner管理", icon: "Picture" },
+    children: [
+      {
+        path: "",
+        component: () => import("../views/banner/index.vue"),
+        name: "BannerManage",
+        meta: { title: "Banner列表", icon: "Picture" },
+      },
+    ],
+  },
+  {
     path: "/system",
     component: Layout,
     meta: { title: "系统管理", icon: "Setting" },

@@ -59,6 +59,10 @@
             <el-icon><Calendar /></el-icon>
             <span>活动管理</span>
           </el-menu-item>
+          <el-menu-item v-if="userStore.menus.includes('/banner_manage')" index="/banner_manage">
+            <el-icon><Picture /></el-icon>
+            <span>Banner管理</span>
+          </el-menu-item>
           <el-sub-menu v-if="userStore.menus.includes('/system')" index="/system">
             <template #title>
               <el-icon><Setting /></el-icon>
